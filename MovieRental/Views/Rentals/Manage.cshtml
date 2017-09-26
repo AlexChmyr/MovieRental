@@ -1,0 +1,138 @@
+﻿
+@{
+    ViewBag.Title = "Manage Rental";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Manage Rentals</h2>
+
+<form id="newRental">
+    <div class="form-group">
+        <label>Operation</label>
+        <select id="operation" name="operation" class="form-control">
+            <option value="add" selected>Add rentals</option>
+            <option value="delete">Delete rentals</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Customer</label>
+        <input id="customer" name="customer" required data-rule-customerExists="true" type="text" value="" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label>Movie</label>
+        <input id="movie" name="movie" data-rule-atLeastOneMovie="true" type="text" value="" class="form-control" />
+    </div>
+
+    <ul id="movies" class="list-group"></ul>
+
+    <button class="btn btn-primary">Submit</button>
+</form>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+
+            var vm = {
+                operation: "add",
+                customerId: 0,
+                movieIds: []
+            };
+
+            var customers = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    url: '/api/customers?query=%QUERY',
+                    wildcard: '%QUERY'
+                }
+            });
+
+            // Customers
+            $('#customer').typeahead({
+                minLength: 3,
+                highlight: true
+            }, {
+                name: 'customers',
+                display: 'name',
+                source: customers,
+                limit: 5
+            }).on("typeahead:select", function (e, customer) {
+                vm.customerId = customer.id;
+            });
+
+            // Movies
+            var movies = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    url: '/api/movies?query=%QUERY',
+                    wildcard: '%QUERY'
+                }
+            });
+
+            $('#movie').typeahead({
+                minLength: 3,
+                highlight: true
+            }, {
+                name: 'movies',
+                display: 'name',
+                source: movies,
+                limit: 5
+            }).on("typeahead:select", function (e, movie) {
+                $("#movies").append("<li class='list-group-item'>" + movie.name + "</li>");
+
+                $("#movie").typeahead("val", "");
+
+                vm.movieIds.push(movie.id);
+            });
+
+            // Submit form
+            var validator = $("#newRental").validate({
+                submitHandler: function () {
+
+                    vm.operation = $("#operation option:selected").val();
+                    var ajax_metod = vm.operation == "delete" ? "delete" : "post";
+
+                    console.log(vm);
+                    console.log(ajax_metod);
+
+                    $.ajax({
+                        url: "/api/rentals",
+                        method: ajax_metod,
+                        data: vm,
+                        success: function (data) {
+                            toastr.success("Rentals saved");
+
+                            // reset form
+                            $("#customer").typeahead("val", "");
+                            $("#movie").typeahead("val", "");
+                            $("#movies").empty();
+
+                            vm = {
+                                customerId: 0,
+                                movieIds: []
+                            };
+                        },
+                        error: function (request, status, error) {
+                            toastr.error("Error was occured while saving rentals: " + request.responseJSON.message);
+                        }
+                    });
+
+                    return false;
+                }
+            });
+
+            $.validator.addMethod("customerExists", function () {
+                return vm.customerId > 0;
+            }, "Please, select a one of existing customers.");
+
+            $.validator.addMethod("atLeastOneMovie", function () {
+                return vm.movieIds.length > 0;
+            }, "Please select at least one movie.");
+       });
+    </script>
+}
+
+

@@ -1,0 +1,69 @@
+﻿@{
+    ViewBag.Title = "Customers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Customers</h2>
+<p>
+    @Html.ActionLink("Create customer", "New", "Customers", null, new { @class = "btn btn-primary" })
+</p>
+<table id="customers" class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Customer</th>
+            <th>Membership type</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+@section scripts
+{
+   <script>
+       $(document).ready(function () {
+           $("#customers").DataTable({
+               ajax: {
+                   url: "/api/customers",
+                   dataSrc:""
+               },
+               columns: [
+                   {
+                       data: "name",
+                       render: function (data, type, customer) {
+                           return "<a href='/customers/edit/" + customer.id + "' id='" + customer.id + "'>" + data + "</a>";
+                       }
+                   },
+                   {
+                       data: "membershipType.name",
+                   },
+                   {
+                       data: "id",
+                       render: function (data, type, customer) {
+                           return "<button class='btn-link del-customer' data-customer-id='" + data + "'>Delete</button>";
+                       }
+                   }
+
+               ]
+           });
+
+           $("#customers").on("click", ".del-customer", function () {
+               var confirmationText = "Are you sure you want to delete this customer?";
+               var self = this;
+
+               bootbox.confirm(confirmationText, function (result) {
+                   if (result) {
+                       $.ajax({
+                           url: "/api/customers/" + $(self).data("customer-id"),
+                           method: "DELETE",
+                           success: function () {
+                               $(self).parents("tr").remove();
+                           }
+                       });
+                   }
+               });
+           });
+       });
+    </script>
+}
+

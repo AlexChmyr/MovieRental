@@ -22,3 +22,21 @@ select,
 textarea {
     max-width: 280px;
 }
+ 
+.field-validation-error, 
+.validation-summary-errors {
+    color: red;
+}
+
+.input-validation-error {
+    border: 2px solid red;
+}
+
+#movies .list-group-item{
+    width:40%;
+}
+
+.tt-hint{
+    display:none;
+}
+
